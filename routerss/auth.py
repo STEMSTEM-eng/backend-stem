@@ -18,12 +18,12 @@ EXPIRE_DAYS = 7
 pwd = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2 = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-# --- Pydantic схемы ---
+
 class RegisterData(BaseModel):
     name: str
     email: str
     password: str
-    phone: Optional[str] = None  # ✅ новое поле (необязательное)
+    phone: Optional[str] = None  
 
 class LoginData(BaseModel):
     email: str
@@ -33,12 +33,12 @@ class UserOut(BaseModel):
     id: int
     name: str
     email: str
-    phone: Optional[str] = None  # ✅ новое поле
+    phone: Optional[str] = None  
 
     class Config:
         from_attributes = True
 
-# --- Утилиты ---
+
 def make_token(user_id: int) -> str:
     expire = datetime.utcnow() + timedelta(days=EXPIRE_DAYS)
     return jwt.encode({"sub": str(user_id), "exp": expire}, SECRET_KEY, algorithm=ALGORITHM)
@@ -50,7 +50,7 @@ def get_user_id(token: str = Depends(oauth2)) -> int:
     except JWTError:
         raise HTTPException(status_code=401, detail="Невалидный токен")
 
-# --- Эндпоинты ---
+
 @router.post("/register")
 def register(data: RegisterData, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == data.email).first():
@@ -59,7 +59,7 @@ def register(data: RegisterData, db: Session = Depends(get_db)):
         name=data.name,
         email=data.email,
         password=pwd.hash(data.password),
-        phone=data.phone  # ✅ сохраняем телефон
+        phone=data.phone  
     )
     db.add(user)
     db.commit()

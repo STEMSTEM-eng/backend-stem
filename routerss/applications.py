@@ -12,22 +12,18 @@ from sqlalchemy.orm import Session
 import models
 from database import get_db
 
-# ✅ Загружаем переменные окружения
+
 load_dotenv()
 
 router = APIRouter()
 
-# ==========================================
-# 🔧 НАСТРОЙКИ ИЗ ПЕРЕМЕННЫХ ОКРУЖЕНИЯ
-# ==========================================
+
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GROUP_CHAT_ID = os.getenv("TELEGRAM_GROUP_CHAT_ID")
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 
-# ==========================================
-# 📦 PYDANTIC МОДЕЛИ (корзина + одиночный товар)
-# ==========================================
+
 
 
 class CartItem(BaseModel):
@@ -45,12 +41,12 @@ class ApplicationCreate(BaseModel):
     username: Optional[str] = None
     comment: Optional[str] = None
 
-    # 🔹 Вариант 1: один товар (обратная совместимость)
+  
     product_name: Optional[str] = None
     article: Optional[str] = None
     product_url: Optional[str] = None
 
-    # 🔹 Вариант 2: корзина с товарами
+  
     products: Optional[List[CartItem]] = None
 
     @field_validator("name")
@@ -75,7 +71,7 @@ class ApplicationCreate(BaseModel):
             digits = "7" + digits
         if len(digits) < 11 or len(digits) > 15:
             raise ValueError("Некорректный номер телефона")
-        # возвращаем оригинальную строку, нормализация позже
+        
         return v
 
     @field_validator("username")
@@ -85,7 +81,7 @@ class ApplicationCreate(BaseModel):
             return v.replace("@", "").strip() or None
         return None
 
-    # 🔹 Валидация: либо один товар, либо список товаров
+
     @model_validator(mode="after")
     def check_products_or_product_name(self) -> "ApplicationCreate":
         if not self.product_name and not self.products:
@@ -98,9 +94,6 @@ class TakeApplication(BaseModel):
     manager_name: str
 
 
-# ==========================================
-# 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-# ==========================================
 
 
 def normalize_phone(phone: str) -> str:
@@ -147,7 +140,7 @@ def format_products_for_display(
     if not names:
         return "Не указан", "—"
 
-    # Краткое название для заголовка
+   
     if len(names) == 1:
         short_name = names[0]
     elif len(names) <= 3:
@@ -155,7 +148,7 @@ def format_products_for_display(
     else:
         short_name = f"{names[0]}, {names[1]} и ещё {len(names) - 2} товаров"
 
-    # Подробный список для комментариев
+
     if articles and len(articles) == len(names):
         detailed_lines = [
             f"• {names[i]} (арт: {articles[i]})" for i in range(len(names))
@@ -208,9 +201,7 @@ def build_action_keyboard(app_id: int) -> Dict:
     }
 
 
-# ==========================================
-# 📤 ОТПРАВКА В BITRIX24 (корзина)
-# ==========================================
+
 
 
 async def send_to_bitrix(data: Dict) -> None:
@@ -222,7 +213,7 @@ async def send_to_bitrix(data: Dict) -> None:
     webhook_base = BITRIX_WEBHOOK_URL.rstrip("/")
     url = f"{webhook_base}/crm.lead.add"
 
-    # 🔹 Форматируем товары (поддержка корзины)
+   
     product_display, product_detailed = format_products_for_display(
         data.get("products_list")
     )
@@ -266,9 +257,7 @@ async def send_to_bitrix(data: Dict) -> None:
         print(f"❌ Ошибка отправки в Битрикс24: {type(e).__name__}: {e}")
 
 
-# ==========================================
-# 📤 ОТПРАВКА В TELEGRAM (корзина)
-# ==========================================
+
 
 
 async def send_to_telegram(data: Dict, app_id: int) -> None:
@@ -320,9 +309,7 @@ async def send_to_telegram(data: Dict, app_id: int) -> None:
         print(f"❌ Ошибка отправки в Telegram: {type(e).__name__}: {e}")
 
 
-# ==========================================
-# 🎯 ЭНДПОИНТЫ
-# ==========================================
+
 
 
 @router.post("")
@@ -339,18 +326,17 @@ async def create_application(
     - POST /api/applications
     - POST /api/applications/
     """
-    # ✅ Нормализация телефона
+ 
     normalized_phone = normalize_phone(data.phone)
 
-    # 🔹 Определяем, один товар или корзина
+  
     is_cart = bool(data.products)
 
     if is_cart:
-        # 🛒 Корзина: несколько товаров
         product_display, _ = format_products_for_display(
             [p.model_dump() for p in data.products]
         )
-        # Берём первую ссылку из корзины или None
+       
         first_url = next((p.url for p in data.products if p.url), None)
 
         db_app = models.Application(
@@ -358,7 +344,7 @@ async def create_application(
             phone=normalized_phone,
             username=data.username,
             comment=data.comment.strip() if data.comment else None,
-            product_name=product_display,  # Краткое название для БД
+            product_name=product_display,  
             article=", ".join([p.article for p in data.products if p.article]) or None,
             product_url=first_url,
             status="new",
@@ -366,7 +352,7 @@ async def create_application(
             updated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
     else:
-        # 📦 Один товар (обратная совместимость)
+    
         db_app = models.Application(
             name=data.name.strip(),
             phone=normalized_phone,
@@ -384,7 +370,7 @@ async def create_application(
     db.commit()
     db.refresh(db_app)
 
-    # ✅ Готовим данные для отправки во внешние сервисы
+    
     products_list = [p.model_dump() for p in data.products] if is_cart else None
 
     app_data: Dict = {
@@ -401,7 +387,7 @@ async def create_application(
         "items_count": len(data.products) if is_cart else 1,
     }
 
-    # ✅ Отправляем в Битрикс24 и Telegram (в фоне)
+    
     background_tasks.add_task(send_to_bitrix, app_data)
     background_tasks.add_task(send_to_telegram, app_data, db_app.id)
 

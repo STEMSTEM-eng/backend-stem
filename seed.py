@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Product, Category   # ← добавили Category
+from models import Product, Category   
 
 load_dotenv()
 
@@ -14,7 +14,7 @@ SessionLocal = sessionmaker(bind=engine)
 def seed_categories(db):
     """Создаём/обновляем все категории"""
     categories = [
-        # Основные разделы
+        
         {"slug": "furniture", "title_ru": "Мебель", "title_kz": "Мебель", "img": "", "path": "/secondpage", "parent_slug": None},
         {"slug": "divany", "title_ru": "Диваны", "title_kz": "Дивандар", "img": "/img/pagesecond/divany/divany.jpg", "path": "/secondpage/divany", "parent_slug": "furniture"},
         {"slug": "kreslo", "title_ru": "Кресла", "title_kz": "Креслолар", "img": "", "path": "/secondpage/kreslo", "parent_slug": "furniture"},
@@ -29,7 +29,7 @@ def seed_categories(db):
         {"slug": "equipment", "title_ru": "Оборудование", "title_kz": "Жабдық", "img": "", "path": "/equipment", "parent_slug": None},
         {"slug": "digital", "title_ru": "Цифровые решения", "title_kz": "Цифрлық шешімдер", "img": "", "path": "/digital", "parent_slug": None},
 
-        # Подкатегории Декора (критично для твоей ошибки!)
+    
         {"slug": "gos", "title_ru": "Государственная символика", "title_kz": "Мемлекеттік рәміздер", "img": "/img/pagesecond/decor/gos/gos.jpg", "path": "/decor/gos", "parent_slug": "decor"},
         {"slug": "3dpanels", "title_ru": "3D панели", "title_kz": "3D панельдер", "img": "/img/pagesecond/decor/3dpanels/3d.jpg", "path": "/decor/3dpanels", "parent_slug": "decor"},
         {"slug": "lighting", "title_ru": "Освещение", "title_kz": "Жарықтандыру", "img": "/img/pagesecond/decor/lighting/light.jpg", "path": "/decor/lighting", "parent_slug": "decor"},
@@ -42,7 +42,7 @@ def seed_categories(db):
     for cat_data in categories:
         existing = db.query(Category).filter_by(slug=cat_data["slug"]).first()
         if existing:
-            # Обновляем, если нужно
+            
             for key, value in cat_data.items():
                 setattr(existing, key, value)
         else:
@@ -56,19 +56,15 @@ def seed_categories(db):
 def seed_products(db):
     """Добавляем товары (только новые)"""
     products = [
-        # === Твои существующие товары (мебель) — оставил без изменений ===
-        # Диваны, Кресла, Пуфы, Стеллажи, Тумбы, Шкафы, Стулья ...
-        # (я оставил их как в твоей последней версии, чтобы не было дублей)
+    
 
         Product(title="Диван школьный «Комфорт» №1", img="/img/pagesecond/divany/divan1.png",
-                description_ru="Мягкий диван для зон отдыха в школе...",  # сократил для примера
+                description_ru="Мягкий диван для зон отдыха в школе...",  
                 description_kz="Мектептегі демалыс аймақтарына арналған жұмсақ диван...",
                 material_ru="Рогожка, берёзовый каркас", material_kz="Жөке мата, қайың каркасы",
                 size="180x80x85 см", article="DIV-001", in_stock=True, category_slug="divany"),
 
-        # ... добавь сюда все остальные товары из твоего предыдущего файла (кресла, пуфы и т.д.)
 
-        # === Товары Декора (новые) ===
         Product(title="Мемориальная доска с гербом РК", img="/img/pagesecond/decor/gos/gos1.png",
                 description_ru="Оформление входной группы школы в государственном стиле.",
                 description_kz="Мектептің кіреберісін мемлекеттік стильде безендіру.",
@@ -134,8 +130,8 @@ def seed():
     try:
         print("🚀 Запуск сидирования базы данных...")
 
-        seed_categories(db)      # ← Сначала категории!
-        seed_products(db)        # ← Потом товары
+        seed_categories(db)      
+        seed_products(db)       
 
         print("🎉 Сидирование завершено успешно!")
 

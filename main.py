@@ -7,20 +7,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 from dotenv import load_dotenv
 
-# ✅ Загружаем переменные окружения из .env файла
+
 load_dotenv()
 
-# Импорт базы данных и роутеров
+
 from database import Base, engine
 from routerss import auth, categories, orders, products, applications, visualize
 
-# ✅ Создаем таблицы БД (если нет)
+
 Base.metadata.create_all(bind=engine)
 
-#app = FastAPI(title="STEM Academia API")
+
 app = FastAPI(title="STEM Academia API", redirect_slashes=False)
 app.router.redirect_slashes = False
-# ✅ Настройки CORS
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -32,20 +32,20 @@ app.add_middleware(
         "https://stem-catalog.pages.dev",
         "https://frontend-stem.pages.dev",
         "https://catalog-stem.pages.dev",
+        "frontend-stem.yvayvayayv7.workers.dev",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ Читаем настройки из .env
+
 BITRIX_WEBHOOK_URL = os.getenv("BITRIX_WEBHOOK_URL")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_GROUP_CHAT_ID = os.getenv("TELEGRAM_GROUP_CHAT_ID")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# Проверка переменных при старте
 if not all([BITRIX_WEBHOOK_URL, GROQ_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_GROUP_CHAT_ID]):
     print("⚠️ Предупреждение: Не все переменные окружения загружены. Проверьте файл .env")
 
@@ -53,9 +53,7 @@ if not HF_TOKEN:
     print("⚠️ HF_TOKEN не задан — AI-визуализация недоступна")
 
 
-# ==========================================
-# 📦 PYDANTIC МОДЕЛИ
-# ==========================================
+
 
 class ChatMessage(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
@@ -67,9 +65,8 @@ class ChatMessage(BaseModel):
         return v
 
 
-# ==========================================
-# 📩 ФУНКЦИЯ ОТПРАВКИ В TELEGRAM
-# ==========================================
+
+
 
 async def send_to_telegram(data: dict):
     """Отправляет уведомление о заявке в Telegram группу"""
@@ -107,9 +104,6 @@ async def send_to_telegram(data: dict):
         print(f"❌ Ошибка отправки в Telegram: {e}")
 
 
-# ==========================================
-# 🔵 ФУНКЦИЯ ОТПРАВКИ В BITRIX24
-# ==========================================
 
 async def send_to_bitrix(data: dict):
     """Отправляет заявку в Битрикс24 (создает Лид)"""
@@ -151,9 +145,7 @@ async def send_to_bitrix(data: dict):
         print(f"❌ Ошибка отправки в Битрикс24: {e}")
 
 
-# ==========================================
-# 🤖 AI CHAT ENDPOINT (GROQ + LLAMA 3.1)
-# ==========================================
+
 
 @app.post("/api/ai/chat")
 async def ai_chat(request: Request):
@@ -179,14 +171,14 @@ async def ai_chat(request: Request):
     Ты — виртуальный помощник компании STEM Academia (Казахстан).
     Твоя задача: помогать клиентам подбирать мебель и оборудование, отвечать на вопросы о доставке и оплате.
 
-    📋 ИНФОРМАЦИЯ О КОМПАНИИ:
+     ИНФОРМАЦИЯ О КОМПАНИИ:
     - Мы продаем: мебель для школ/офисов, парты, стулья, шкафы, интерактивные панели, 3D декор, лабораторное оборудование.
     - Доставка: По всему Казахстану.
     - Самовывоз: г. Астана, ул. Домалак-ана 26.
     - Телефон/WhatsApp: +7 700 039 58 77.
     - Сайт: stem-academia.kz
 
-    💬 ПРАВИЛА ОБЩЕНИЯ:
+     ПРАВИЛА ОБЩЕНИЯ:
     - Отвечай кратко, вежливо и по делу (максимум 3-4 предложения).
     - Если не знаешь точного ответа — предложи написать менеджеру в WhatsApp.
     - Не выдумывай цены и наличие, если их нет в вопросе.

@@ -6,11 +6,11 @@ from dotenv import load_dotenv
 import os
 import logging
 
-# ✅ Настройка логирования
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ✅ Загружаем переменные окружения
+
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -18,38 +18,38 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     raise ValueError("❌ DATABASE_URL не настроен в переменных окружения!")
 
-# ✅ Оптимизированные настройки пула соединений для Neon (Serverless PostgreSQL)
+
 engine = create_engine(
     DATABASE_URL,
-    # === Настройки пула соединений ===
-    poolclass=QueuePool,          # ✅ Стандартный пул с очередью
-    pool_size=5,                  # ✅ Количество постоянных соединений (оптимально для бесплатного тарифа)
-    max_overflow=10,              # ✅ Дополнительные соединения при пиковой нагрузке
-    pool_pre_ping=True,           # ✅ Проверка соединения перед использованием (защита от "broken pipe")
-    pool_recycle=600,             # ✅ Пересоздавать соединения каждые 10 минут (было 300) — критично для Neon!
+
+    poolclass=QueuePool,          
+    pool_size=5,                  
+    max_overflow=10,              
+    pool_pre_ping=True,           
+    pool_recycle=600,             
     
-    # === Настройки подключения ===
+    
     connect_args={
-        "connect_timeout": 10,    # ✅ Таймаут подключения: 10 секунд
-        "sslmode": "require",     # ✅ Принудительный SSL (требуется Neon)
-        "sslrootcert": None,      # ✅ Использовать системные сертификаты
-        "options": "-c timezone=Asia/Almaty"  # ✅ Таймзона Казахстана для консистентности дат
+        "connect_timeout": 10,    
+        "sslmode": "require",     
+        "sslrootcert": None,      
+        "options": "-c timezone=Asia/Almaty"  
     },
     
-    # === Дополнительные опции ===
-    echo=False,                   # ❌ Отключить логирование SQL-запросов в продакшене (включите True для отладки)
-    future=True                   # ✅ Использовать новый стиль SQLAlchemy 2.0
+    
+    echo=False,                   
+    future=True                   
 )
 
-# ✅ Factory для создания сессий
+
 SessionLocal = sessionmaker(
     autocommit=False, 
     autoflush=False, 
     bind=engine,
-    expire_on_commit=False  # ✅ Предотвращает ошибки при доступе к объектам после коммита
+    expire_on_commit=False  
 )
 
-# ✅ Базовый класс для моделей
+
 Base = declarative_base()
 
 
@@ -86,7 +86,7 @@ def init_db():
         raise
 
 
-# ✅ Обработчик событий пула (для отладки соединений)
+
 @event.listens_for(engine, "connect")
 def on_connect(dbapi_conn, record):
     """Вызывается при каждом новом подключении к БД"""
